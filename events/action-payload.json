@@ -1,0 +1,113 @@
+{
+    "data": {
+        "org_id": "20000331",
+        "entity": {
+            "opportunity_title": "Test Opportunity",
+            "status": "open",
+            "source": {
+                "title": "manual",
+                "href": null
+            },
+            "source_type": "manual",
+            "_schema": "opportunity",
+            "_id": "a61fd54c-aed9-420f-91ef-8d505438be7f",
+            "_org": "20000331",
+            "_owners": [
+                {
+                    "org_id": "20000331",
+                    "user_id": "29216"
+                }
+            ],
+            "_created_at": "2025-09-17T08:48:29.363Z",
+            "_updated_at": "2025-09-17T08:54:59.472Z",
+            "opportunity_number": "OP-100",
+            "_title": "Test Opportunity",
+            "_acl": {
+                "view": [
+                    "org_20000331"
+                ],
+                "edit": [
+                    "org_20000331"
+                ],
+                "delete": [
+                    "org_20000331"
+                ]
+            },
+            "bezeichnung": "",
+            "energietraeger": "Solar",
+            "inbetriebnahme": "2015-10-01",
+            "leistung_kw": "10",
+            "_relations": [],
+            "_messages": {
+                "total_messages": 0,
+                "unread_count": 0
+            },
+            "_workflows": {
+                "current_tasks": [],
+                "phases_in_progress": []
+            }
+        },
+        "action_config": {
+            "app_name": "EEG Feed-In Tariff Pricing",
+            "component_id": "554d7e19-b4ee-4fff-b4bc-9e867f5a5581",
+            "name": "Get Feed-In Tariffs",
+            "description": "",
+            "app_id": "8e16dc45-a922-43b2-973d-34538a7134a9"
+        },
+        "app_config": {
+            "type": "external_integration",
+            "external_integration_settings": {
+                "url": "https://mhjx1vta1b.execute-api.eu-central-1.amazonaws.com/action"
+            },
+            "wait_for_callback": true
+        },
+        "app_options": {},
+        "execution_id": "9ad285a7-6c78-4bd8-a90e-8cd4dc743588",
+        "execution_status": "paused",
+        "exection_action_id": "fd7a5ade-046d-45cd-82c1-290c3c9a9786",
+        "trigger_event": {
+            "caller": {
+                "authorized": true,
+                "EpilotAuth": {
+                    "organizationId": "20000331",
+                    "claims": {
+                        "sub": "43e45832-7031-70f0-8bbf-da84bde3f3b5",
+                        "roles": "",
+                        "ivyOrganization": "20000331",
+                        "iss": "https://cognito-idp.eu-central-1.amazonaws.com/eu-central-1_9pMhAIOx7",
+                        "ivyUser": "29216",
+                        "custom:ivy_user_id": "29216",
+                        "organizationId": "20000331",
+                        "userPoolClientId": "4e0a24mi9168m5tj6rfa98t3am",
+                        "auth_time": 1758127772,
+                        "ivyOrganizationId": "20000331",
+                        "exp": 1758131673,
+                        "iat": 1758128074,
+                        "jti": "89cad2d5-efc1-4d69-9983-0f72012ec0fb",
+                        "email": "v.kuosmanen@epilot.cloud",
+                        "email_verified": true,
+                        "custom:ivy_org_id": "20000331",
+                        "cognito:username": "v.kuosmanen@epilot.cloud",
+                        "ivyUserId": "29216",
+                        "userId": "29216",
+                        "origin_jti": "e125effe-310a-45e2-b6c4-27d891a5f36b",
+                        "aud": "4e0a24mi9168m5tj6rfa98t3am",
+                        "event_id": "393d9790-d975-4309-877a-46c2cd894a26",
+                        "token_use": "id",
+                        "userPoolId": "eu-central-1_9pMhAIOx7",
+                        "username": "v.kuosmanen@epilot.cloud"
+                    },
+                    "userId": "29216",
+                    "token": "eyJraWQiOi..."
+                }
+            },
+            "org_id": "20000331",
+            "type": "manual",
+            "entity_id": "a61fd54c-aed9-420f-91ef-8d505438be7f"
+        },
+        "resume_token": "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJ0b2tlbl91c2UiOiJyZXN1bWVfZXhlY3V0aW9uIiwiZXhlY3V0aW9uX2lkIjoiOWFkMjg1YTctNmM3OC00YmQ4LWE5MGUtOGNkNGRjNzQzNTg4Iiwib3JnX2lkIjoiMjAwMDAzMzEiLCJpYXQiOjE3NTgxMjgyMzYsImV4cCI6MTc4OTY4NTgzNn0.5AxSHDFwwiGZoRvV0YWxdAlTLhSKkVhmekzH3Gy0Vj0",
+        "callback_post_url": "https://automation.sls.epilot.io/v1/automation/public/executions:resume"
+    },
+    "timestamp": "2025-09-17T16:57:16.468Z",
+    "type": "external_integration"
+}

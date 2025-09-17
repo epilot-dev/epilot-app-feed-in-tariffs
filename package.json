@@ -21,6 +21,7 @@
 	"dependencies": {
 		"@aws-sdk/client-dynamodb": "^3.890.0",
 		"@aws-sdk/lib-dynamodb": "^3.890.0",
+		"@epilot/entity-client": "^6.9.0",
 		"sst": "3.17.13",
 		"tsx": "^4.20.5",
 		"xlsx": "^0.18.5"

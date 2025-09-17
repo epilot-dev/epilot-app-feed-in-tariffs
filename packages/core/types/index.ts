@@ -41,3 +41,37 @@ export interface TariffResponse {
   error?: string;
   totalCount?: number;
 }
+
+// Epilot webhook interfaces (minimal - only fields we need)
+export interface EpilotEntity {
+  _id: string;
+  _schema: string;
+  // Allow any additional fields from the entity
+  [key: string]: any;
+}
+
+export interface EpilotActionConfig {
+  app_name: string;
+  component_id: string;
+  name: string;
+  description: string;
+  app_id: string;
+}
+
+export interface EpilotWebhookData {
+  entity: EpilotEntity;
+  action_config: EpilotActionConfig;
+  resume_token: string;
+  callback_post_url: string;
+}
+
+export interface EpilotWebhookPayload {
+  data: EpilotWebhookData;
+  timestamp: string;
+  type: string;
+}
+
+// For calling back to epilot
+export interface EpilotCallbackPayload {
+  resume_token: string;
+}

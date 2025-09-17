@@ -22,6 +22,11 @@ api.route("GET /tariff", {
   link: [table],
 });
 
+api.route("POST /action", {
+  handler: "packages/functions/webhook/webhook-handler.handler",
+  link: [table],
+});
+
 export const outputs = {
   api: api.url,
   table: table.name,
