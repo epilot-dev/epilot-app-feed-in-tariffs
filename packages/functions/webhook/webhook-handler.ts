@@ -1,7 +1,7 @@
 import { APIGatewayProxyHandlerV2 } from "aws-lambda";
-import { EpilotWebhookPayload, EpilotCallbackPayload, EegTariffRecord } from "../../core/types";
+import type { EpilotWebhookPayload, EpilotCallbackPayload, EegTariffRecord } from "../../core/types";
 import { getClient } from "@epilot/entity-client";
-import { handler as apiHandler } from "../api/api-handler";
+import { lookupTariffs } from "../../core/services/tariff-lookup";
 
 export const handler: APIGatewayProxyHandlerV2 = async (event) => {
   try {
@@ -35,19 +35,20 @@ export const handler: APIGatewayProxyHandlerV2 = async (event) => {
     const commissioningDate = entity.inbetriebnahme;
     const powerOutput = entity.leistung_kw;
 
-    console.log("Tariff lookup params:", { energyType, commissioningDate, powerOutput });
+    // Look up tariffs using the shared service
+    const tariffResult = await lookupTariffs({
+      energyType: energyType || "",
+      commissioningDate,
+      powerOutput,
+    });
 
-    // Look up tariffs using existing API handler logic
-    const tariffResponse = await apiHandler({
-      queryStringParameters: {
-        energyType,
-        commissioningDate,
-        powerOutput,
-      },
-    } as any);
-    
-    const responseBody = JSON.parse(tariffResponse.body || '{}');
-    const tariffs: EegTariffRecord[] = responseBody.records || [];
+    if (tariffResult.error) {
+      console.error("Tariff lookup error:", tariffResult.error);
+    }
+
+    const tariffs: EegTariffRecord[] = tariffResult.records || [];
+
+    console.log(`Found ${tariffs.length} tariffs`, { energyType, commissioningDate, powerOutput, tariffs });
     
     // Initialize epilot client
     const client = getClient();
@@ -56,19 +57,45 @@ export const handler: APIGatewayProxyHandlerV2 = async (event) => {
     // Update entity with tariff results
     const updateData: any = {
       processed_at: new Date().toISOString(),
+      mieterstromzuschlag_ctkwh: null,
+      ausfall_verguetung_in_ctkwh: null,
+      anzulegender_wert_in_ctkwh: null,
+      einspeise_verguetung_in_ctkwh: null,
     };
 
     // Add tariff data if found
     if (tariffs.length > 0) {
       const bestTariff = tariffs[0]; // Already sorted by power ascending
-      updateData.mieterstromzuschlag_ctkwh = bestTariff.mieterstromzuschlag;
-      updateData.ausfall_verguetung_in_ctkwh = bestTariff.ausfallverguetung;
-      updateData.anzulegender_wert_in_ctkwh = bestTariff.anzulegender_wert;
-      updateData.einspeise_verguetung_in_ctkwh = bestTariff.einspeiseverguetung;
+      updateData.mieterstromzuschlag_ctkwh = bestTariff.mieterstromzuschlag ?? null;
+      updateData.ausfall_verguetung_in_ctkwh = bestTariff.ausfallverguetung ?? null;
+      updateData.anzulegender_wert_in_ctkwh = bestTariff.anzulegender_wert ?? null;
+      updateData.einspeise_verguetung_in_ctkwh = bestTariff.einspeiseverguetung ?? null;
+      updateData.bezeichnung = bestTariff.bezeichnung ?? entity.bezeichnung ?? null;
+      updateData.eeg_feed_in_tariff = bestTariff; // Store all found tariffs for reference
     }
 
+    const bezeichnung = tariffs.length > 0 ? tariffs[0].bezeichnung : 'unbekannte Anlage';
+
+    const activityRes = await client.createActivity(null, {
+      type: "EEGFeedInTariffLookup",
+      message: bezeichnung ? `Vergütungen für {{bezeichnung}} wurden von der API abgerufen` : "Vergütungen wurden von der API abgerufen",
+      title: "EEG Vergütungsdaten abgerufen",
+      payload: {
+        input: {
+          energyType,
+          commissioningDate,
+          powerOutput,
+        },
+        output: {
+          payload: updateData,
+          bezeichnung,
+          tariffs,
+        }
+      },
+    });
+
     await client.patchEntity(
-      { slug: payload.data.entity._schema, id: payload.data.entity._id },
+      { slug: payload.data.entity._schema, id: payload.data.entity._id, activity_id: activityRes.data._id },
       updateData,
     );
 
@@ -111,12 +138,14 @@ async function resumeEpilotExecution(callbackUrl: string, resumeToken: string): 
     });
 
     if (!response.ok) {
-      throw new Error(`Callback failed: ${response.status} ${response.statusText}`);
+      throw new Error(`Callback failed: ${response.status} ${response.statusText} ${JSON.stringify(await response.json())}`);
     }
 
     console.log("Epilot execution resumed successfully");
   } catch (error) {
-    console.error("Failed to resume epilot execution:", error);
+    console.error("Failed to resume epilot execution:", JSON.stringify(error), error);
+
+
     throw error;
   }
 }
