@@ -33,7 +33,8 @@ export const handler: APIGatewayProxyHandlerV2 = async (event) => {
     const entity = payload.data.entity;
     const energyType = entity.energietraeger;
     const commissioningDate = entity.inbetriebnahme;
-    const powerOutput = entity.leistung_kw;
+    // const powerOutput = entity.leistung_kw;
+    const powerOutput = undefined
 
     // Look up tariffs using the shared service
     const tariffResult = await lookupTariffs({
@@ -71,14 +72,14 @@ export const handler: APIGatewayProxyHandlerV2 = async (event) => {
       updateData.anzulegender_wert_in_ctkwh = bestTariff.anzulegender_wert ?? null;
       updateData.einspeise_verguetung_in_ctkwh = bestTariff.einspeiseverguetung ?? null;
       updateData.bezeichnung = bestTariff.bezeichnung ?? entity.bezeichnung ?? null;
-      updateData.eeg_feed_in_tariff = bestTariff; // Store all found tariffs for reference
+      updateData.eeg_feed_in_tariffs = tariffs; // Store all found tariffs for reference
     }
 
     const bezeichnung = tariffs.length > 0 ? tariffs[0].bezeichnung : 'unbekannte Anlage';
 
     const activityRes = await client.createActivity(null, {
       type: "EEGFeedInTariffLookup",
-      message: bezeichnung ? `Vergütungen für {{bezeichnung}} wurden von der API abgerufen` : "Vergütungen wurden von der API abgerufen",
+      message: bezeichnung ? `Vergütungen für {{payload.bezeichnung}} wurden von der API abgerufen` : "Vergütungen wurden von der API abgerufen",
       title: "EEG Vergütungsdaten abgerufen",
       payload: {
         input: {
@@ -100,7 +101,9 @@ export const handler: APIGatewayProxyHandlerV2 = async (event) => {
     );
 
     // Call back to epilot to resume the automation
-    await resumeEpilotExecution(payload.data.callback_post_url, payload.data.resume_token);
+    if (payload.data.callback_post_url && payload.data.resume_token) {
+      await resumeEpilotExecution(payload.data.callback_post_url, payload.data.resume_token);
+    }
 
     return {
       statusCode: 200,

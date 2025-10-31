@@ -15,6 +15,9 @@ const api = new sst.aws.ApiGatewayV2("EegTariffApi", {
     allowMethods: ["GET", "POST", "OPTIONS"],
     allowOrigins: ["*"],
   },
+  domain: $app.stage === "prod" ? {
+    name: "app-feed-in-tariffs.sls.epilot.io",
+  } : undefined,
 });
 
 api.route("GET /tariff", {
