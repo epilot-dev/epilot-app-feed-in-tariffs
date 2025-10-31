@@ -1,0 +1,136 @@
+<style>
+  table {
+    width: 100%;
+    border-collapse: collapse;
+    background: white;
+    box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
+  }
+
+  thead {
+    background-color: #f9fafb;
+    border-bottom: 2px solid #e5e7eb;
+  }
+
+  th {
+    padding: 12px 16px;
+    text-align: left;
+    font-size: 12px;
+    font-weight: 600;
+    color: #374151;
+    text-transform: uppercase;
+    letter-spacing: 0.05em;
+  }
+
+  th.text-right {
+    text-align: right;
+  }
+
+  td {
+    padding: 12px 16px;
+    font-size: 14px;
+    border-bottom: 1px solid #e5e7eb;
+  }
+
+  td.text-right {
+    text-align: right;
+  }
+
+  tbody tr:hover {
+    background-color: #f9fafb;
+  }
+
+  .font-medium {
+    font-weight: 500;
+    color: #111827;
+  }
+
+  .text-secondary {
+    font-size: 12px;
+    color: #6b7280;
+    margin-top: 4px;
+  }
+
+  .no-data {
+    text-align: center;
+    padding: 40px;
+    color: #6b7280;
+  }
+</style>
+
+{{#if opportunity.eeg_feed_in_tariffs}}
+<table>
+  <thead>
+    <tr>
+      <th>Bezeichnung</th>
+      <th>Leistung</th>
+      <th>Inbetriebnahme</th>
+      <th class="text-right">Einspeisevergütung</th>
+      <th class="text-right">Anzulegender Wert</th>
+      <th class="text-right">Ausfallvergütung</th>
+      <th class="text-right">Mieterstromzuschlag</th>
+    </tr>
+  </thead>
+  <tbody>
+    {{#each opportunity.eeg_feed_in_tariffs}}
+    <tr>
+      <td>
+        <div class="font-medium">{{bezeichnung}}</div>
+        {{#if energietraeger}}
+        <div class="text-secondary">{{energietraeger}}</div>
+        {{/if}}
+        {{#if anteilige_zuordnung}}
+        <div class="text-secondary">{{anteilige_zuordnung}}</div>
+        {{/if}}
+      </td>
+      <td>
+        <div class="font-medium">
+          {{#if power_output_to}}
+          {{power_output_from}} - {{power_output_to}} kW
+          {{else}}
+          ab {{power_output_from}} kW
+          {{/if}}
+        </div>
+        {{#if weitereKriterien}}
+        <div class="text-secondary">{{weitereKriterien}}</div>
+        {{/if}}
+      </td>
+      <td>
+        <div>{{inbetriebnahme}}</div>
+      </td>
+      <td class="text-right font-medium">
+        {{#if einspeiseverguetung}}
+        {{einspeiseverguetung}} ct/kWh
+        {{else}}
+        -
+        {{/if}}
+      </td>
+      <td class="text-right font-medium">
+        {{#if anzulegender_wert}}
+        {{anzulegender_wert}} ct/kWh
+        {{else}}
+        -
+        {{/if}}
+      </td>
+      <td class="text-right">
+        {{#if ausfallverguetung}}
+        {{ausfallverguetung}} ct/kWh
+        {{else}}
+        -
+        {{/if}}
+      </td>
+      <td class="text-right">
+        {{#if mieterstromzuschlag}}
+        {{mieterstromzuschlag}} ct/kWh
+        {{else}}
+        -
+        {{/if}}
+      </td>
+    </tr>
+    {{/each}}
+  </tbody>
+</table>
+{{else}}
+<div class="no-data">
+  Keine Einspeisevergütungen verfügbar
+</div>
+{{/if}}

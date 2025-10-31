@@ -61,6 +61,18 @@ export const lookupTariffs = async (params: TariffLookupParams): Promise<TariffL
         if (commissioningDate < record.commissioning_date_from) return false;
         if (record.commissioning_date_to && commissioningDate > record.commissioning_date_to) return false;
 
+        // Exclude open-ended tariffs (no commissioning_date_to) that are more than 1 year old
+        if (!record.commissioning_date_to) {
+          const recordDate = new Date(record.commissioning_date_from);
+          const providedDate = new Date(commissioningDate);
+          const oneYearInMs = 365 * 24 * 60 * 60 * 1000;
+          const timeDiff = providedDate.getTime() - recordDate.getTime();
+
+          if (timeDiff > oneYearInMs) {
+            return false;
+          }
+        }
+
         return true;
       });
     }

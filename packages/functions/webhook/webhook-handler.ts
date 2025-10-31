@@ -33,14 +33,14 @@ export const handler: APIGatewayProxyHandlerV2 = async (event) => {
     const entity = payload.data.entity;
     const energyType = entity.energietraeger;
     const commissioningDate = entity.inbetriebnahme;
-    // const powerOutput = entity.leistung_kw;
-    const powerOutput = undefined
+    const powerOutput = entity.leistung_kw;
 
     // Look up tariffs using the shared service
     const tariffResult = await lookupTariffs({
       energyType: energyType || "",
       commissioningDate,
-      powerOutput,
+      // we fetch all tariffs (customer request)
+      powerOutput: undefined, 
     });
 
     if (tariffResult.error) {
@@ -66,7 +66,25 @@ export const handler: APIGatewayProxyHandlerV2 = async (event) => {
 
     // Add tariff data if found
     if (tariffs.length > 0) {
-      const bestTariff = tariffs[0]; // Already sorted by power ascending
+      // Find the best matching tariff based on power output
+      let bestTariff = tariffs[0]; // Default to first (smallest power range)
+
+      if (powerOutput) {
+        const power = parseFloat(powerOutput);
+        // Find tariff that matches the power range (tariffs are sorted by power_output_from ascending)
+        const matchingTariff = tariffs.find((tariff) => {
+          if (tariff.power_output_from === undefined) return false;
+          // Check if the power falls within this tariff's range
+          if (power < tariff.power_output_from) return false;
+          if (tariff.power_output_to && power > tariff.power_output_to) return false;
+          return true;
+        });
+
+        if (matchingTariff) {
+          bestTariff = matchingTariff;
+        }
+      }
+
       updateData.mieterstromzuschlag_ctkwh = bestTariff.mieterstromzuschlag ?? null;
       updateData.ausfall_verguetung_in_ctkwh = bestTariff.ausfallverguetung ?? null;
       updateData.anzulegender_wert_in_ctkwh = bestTariff.anzulegender_wert ?? null;

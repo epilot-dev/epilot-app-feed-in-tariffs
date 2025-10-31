@@ -53,7 +53,7 @@ const formatPowerRange = (params: { from?: number; to?: number }) => {
 
 interface CellWithActionsProps {
   children: React.ReactNode;
-  value: string;
+  value?: string;
   variableName: string;
   className?: string;
   onCopyVariable?: () => void;
@@ -142,27 +142,27 @@ export const FeedInTariffsTable = ({ tariffs, schema = 'opportunity' }: FeedInTa
                     )}
                   </CellWithActions>
                   <CellWithActions
-                    value={formatPowerRange({
-                      from: tariff.power_output_from,
-                      to: tariff.power_output_to,
-                    })}
+                    value={tariff.weitereKriterien}
                     variableName={`{{${schema}.eeg_feed_in_tariffs.${index}.power_output_from}}`}
-                    className="whitespace-nowrap text-sm text-gray-700"
+                    className="text-sm text-gray-700"
                   >
-                    <div className="text-sm font-medium text-gray-900">
+                    <div className="text-sm font-medium text-gray-900 whitespace-nowrap">
                       {formatPowerRange({
                         from: tariff.power_output_from,
                         to: tariff.power_output_to,
                       })}
                     </div>
                     {tariff.weitereKriterien && (
-                      <div className="text-xs text-gray-500 mt-1">
+                      <div
+                        className="text-xs text-gray-500 mt-1 max-w-[200px] truncate"
+                        title={tariff.weitereKriterien}
+                      >
                         {tariff.weitereKriterien}
                       </div>
                     )}
                   </CellWithActions>
                   <CellWithActions
-                    value={tariff.inbetriebnahme || '-'}
+                    value={tariff.inbetriebnahme}
                     variableName={`{{${schema}.eeg_feed_in_tariffs.${index}.inbetriebnahme}}`}
                     className="text-sm text-gray-700"
                   >

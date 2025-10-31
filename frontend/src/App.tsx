@@ -9,8 +9,6 @@ export function App () {
   // TODO the context should be typed through our app bridge oss package
   const [ctx, setCtx] = useState<any>(null);
 
-  console.log('***', { ctx })
-
   const entityQuery = useEntity({ id: ctx?.entityId, slug: ctx?.schema });
 
   const tariffs = useMemo(() => {
@@ -32,6 +30,27 @@ export function App () {
     return () => {
       unsubscribe();
     }
+  }, []);
+
+  useEffect(() => {
+    const appElement = document.getElementById('feed-in-tariffs-app');
+
+    if (!appElement) {
+      return;
+    }
+
+    const resizeObserver = new ResizeObserver((entries) => {
+      for (const entry of entries) {
+        const contentHeight = entry.contentRect.height;
+        epilot.sendMessageToParent('update-content-height', { contentHeight });
+      }
+    });
+
+    resizeObserver.observe(appElement);
+
+    return () => {
+      resizeObserver.disconnect();
+    };
   }, []);
 
 

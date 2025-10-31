@@ -1,7 +1,7 @@
 import { useState } from "react";
 
 export interface CellActionsProps {
-  value: string;
+  value?: string;
   variableName?: string;
   onCopyVariable?: () => void;
 }
@@ -16,7 +16,7 @@ export const CellActions = ({ value, variableName, onCopyVariable }: CellActions
 
     try {
       // Try modern clipboard API first
-      if (navigator.clipboard && navigator.clipboard.writeText) {
+      if (value && navigator.clipboard && navigator.clipboard.writeText) {
         await navigator.clipboard.writeText(value);
         console.log('Value copied to clipboard (modern API):', value);
         setShowConfirmation('copy');
@@ -30,7 +30,7 @@ export const CellActions = ({ value, variableName, onCopyVariable }: CellActions
     // Fallback method using textarea and execCommand
     try {
       const textarea = document.createElement('textarea');
-      textarea.value = value;
+      textarea.value = value || '';
       textarea.style.position = 'fixed';
       textarea.style.opacity = '0';
       textarea.style.pointerEvents = 'none';
