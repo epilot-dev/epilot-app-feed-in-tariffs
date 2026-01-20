@@ -312,7 +312,8 @@ async function populateData() {
   const tableName = Resource.EegTariffTable.name;
 
   // Read Excel file
-  const excelPath = path.join(__dirname, "../excel-data/eeg-verguetungskategorien_eeg_2025_20250711.xlsx");
+  // Source: https://www.netztransparenz.de/de-de/Erneuerbare-Energien-und-Umlagen/Abwicklungshinweise-und-Umsetzungshilfen/EEG
+  const excelPath = path.join(__dirname, "../excel-data/eeg-verguetungskategorien_eeg_2026_20251212.xlsx");
   const workbook = XLSX.readFile(excelPath);
   const worksheet = workbook.Sheets["EEG-Vergütungen und vNNE"];
 

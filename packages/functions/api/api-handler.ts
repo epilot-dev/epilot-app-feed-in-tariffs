@@ -5,7 +5,7 @@ import { lookupTariffs } from "../../core/services/tariff-lookup";
 export const handler: APIGatewayProxyHandlerV2 = async (event) => {
   // Parse query parameters
   const queryParams = event.queryStringParameters || {};
-  const { energyType, commissioningDate, powerOutput, criteria } = queryParams;
+  const { energyType, commissioningDate, powerOutput, criteria, bezeichnung } = queryParams;
 
   // Lookup tariffs using the shared service
   const result = await lookupTariffs({
@@ -13,6 +13,7 @@ export const handler: APIGatewayProxyHandlerV2 = async (event) => {
     commissioningDate,
     powerOutput,
     criteria,
+    bezeichnung,
   });
 
   // Handle validation errors

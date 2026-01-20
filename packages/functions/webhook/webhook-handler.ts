@@ -34,13 +34,15 @@ export const handler: APIGatewayProxyHandlerV2 = async (event) => {
     const energyType = entity.energietraeger;
     const commissioningDate = entity.inbetriebnahme;
     const powerOutput = entity.leistung_kw;
+    const bezeichnung = entity.bezeichnung;
 
     // Look up tariffs using the shared service
     const tariffResult = await lookupTariffs({
       energyType: energyType || "",
       commissioningDate,
       // we fetch all tariffs (customer request)
-      powerOutput: undefined, 
+      powerOutput: undefined,
+      bezeichnung,
     });
 
     if (tariffResult.error) {
@@ -49,8 +51,8 @@ export const handler: APIGatewayProxyHandlerV2 = async (event) => {
 
     const tariffs: EegTariffRecord[] = tariffResult.records || [];
 
-    console.log(`Found ${tariffs.length} tariffs`, { energyType, commissioningDate, powerOutput, tariffs });
-    
+    console.log(`Found ${tariffs.length} tariffs`, { energyType, commissioningDate, powerOutput, bezeichnung, tariffs });
+
     // Initialize epilot client
     const client = getClient();
     client.defaults.headers.common["Authorization"] = `Bearer ${epilotToken}`;
@@ -89,25 +91,23 @@ export const handler: APIGatewayProxyHandlerV2 = async (event) => {
       updateData.ausfall_verguetung_in_ctkwh = bestTariff.ausfallverguetung ?? null;
       updateData.anzulegender_wert_in_ctkwh = bestTariff.anzulegender_wert ?? null;
       updateData.einspeise_verguetung_in_ctkwh = bestTariff.einspeiseverguetung ?? null;
-      updateData.bezeichnung = bestTariff.bezeichnung ?? entity.bezeichnung ?? null;
       updateData.eeg_feed_in_tariffs = tariffs; // Store all found tariffs for reference
     }
 
-    const bezeichnung = tariffs.length > 0 ? tariffs[0].bezeichnung : 'unbekannte Anlage';
-
     const activityRes = await client.createActivity(null, {
       type: "EEGFeedInTariffLookup",
-      message: bezeichnung ? `Vergütungen für {{payload.bezeichnung}} wurden von der API abgerufen` : "Vergütungen wurden von der API abgerufen",
+      message: tariffs.length > 0 ? `Vergütungen für {{payload.bezeichnung}} wurden von der API abgerufen` : "Vergütungen wurden von der API abgerufen",
       title: "EEG Vergütungsdaten abgerufen",
       payload: {
         input: {
           energyType,
           commissioningDate,
           powerOutput,
+          bezeichnung,
         },
         output: {
           payload: updateData,
-          bezeichnung,
+          bezeichnung: tariffs.length > 0 ? tariffs[0].bezeichnung : 'unbekannte Anlage',
           tariffs,
         }
       },

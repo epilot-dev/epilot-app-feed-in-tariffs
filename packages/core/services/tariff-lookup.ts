@@ -11,6 +11,7 @@ export interface TariffLookupParams {
   commissioningDate?: string;
   powerOutput?: string;
   criteria?: string;
+  bezeichnung?: string;
 }
 
 export interface TariffLookupResult {
@@ -26,7 +27,7 @@ export interface TariffLookupResult {
  * @returns The tariff lookup result
  */
 export const lookupTariffs = async (params: TariffLookupParams): Promise<TariffLookupResult> => {
-  const { energyType, commissioningDate, powerOutput, criteria } = params;
+  const { energyType, commissioningDate, powerOutput, criteria, bezeichnung } = params;
 
   if (!energyType) {
     return {
@@ -80,6 +81,11 @@ export const lookupTariffs = async (params: TariffLookupParams): Promise<TariffL
     // Filter by additional criteria
     if (criteria) {
       records = records.filter((record) => record.weitereKriterien?.toLowerCase().includes(criteria.toLowerCase()));
+    }
+
+    // Filter by bezeichnung (category designation/code)
+    if (bezeichnung) {
+      records = records.filter((record) => record.bezeichnung?.toLowerCase().includes(bezeichnung.toLowerCase()));
     }
 
     // Filter by power output (using parsed power ranges)

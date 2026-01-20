@@ -6,8 +6,8 @@ export const getEntityClient = (token: string) => {
 	const client = getClient();
 
 	return configureClient(client, {
-		// baseURL: "https://entity.sls.epilot.io",
-		baseURL: "https://entity.dev.sls.epilot.io",
+		baseURL: "https://entity.sls.epilot.io",
+		// baseURL: "https://entity.dev.sls.epilot.io",
 		token,
 	});
 };

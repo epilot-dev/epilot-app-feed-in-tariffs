@@ -122,7 +122,7 @@ export const CellActions = ({ value, variableName, onCopyVariable }: CellActions
         onMouseLeave={() => setShowTooltip(null)}
       >
         <button
-          className="p-0 hover:opacity-70 transition-opacity cursor-pointer color-primary"
+          className="p-0 hover:opacity-70 transition-opacity cursor-pointer text-primary"
           tabIndex={-1}
           type="button"
           onClick={handleCopyValue}

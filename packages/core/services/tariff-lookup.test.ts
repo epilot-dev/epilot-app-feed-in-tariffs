@@ -158,12 +158,12 @@ describe("tariff-lookup service", () => {
 
       const result = await lookupTariffs({
         energyType: "Solar/Gebäude",
-        commissioningDate: "2025-01-01",
+        commissioningDate: "2022-06-15",
       });
 
       expect(result.found).toBe(true);
       expect(result.records).toHaveLength(1);
-      expect(result.records[0].sk).toBe("record2"); // Has no end date
+      expect(result.records[0].sk).toBe("record2"); // Has no end date and is within 1 year
     });
   });
 
@@ -310,6 +310,89 @@ describe("tariff-lookup service", () => {
       expect(result.found).toBe(true);
       expect(result.records).toHaveLength(1);
       expect(result.records[0].sk).toBe("record2");
+    });
+  });
+
+  describe("Bezeichnung filtering", () => {
+    const mockRecords: EegTariffRecord[] = [
+      {
+        pk: "Solar/Gebäude",
+        sk: "record1",
+        energietraeger: "Solar/Gebäude",
+        bezeichnung: "SgK330------09",
+        inbetriebnahme: "ab 01.01.2020",
+        commissioning_date_from: "2020-01-01",
+        power_output_from: 0,
+        einspeiseverguetung: 10,
+        anzulegender_wert: 10,
+        ausfallverguetung: 0,
+        mieterstromzuschlag: 0,
+      },
+      {
+        pk: "Solar/Gebäude",
+        sk: "record2",
+        energietraeger: "Solar/Gebäude",
+        bezeichnung: "SgK331------09",
+        inbetriebnahme: "ab 01.01.2020",
+        commissioning_date_from: "2020-01-01",
+        power_output_from: 0,
+        einspeiseverguetung: 8,
+        anzulegender_wert: 8,
+        ausfallverguetung: 0,
+        mieterstromzuschlag: 0,
+      },
+      {
+        pk: "Solar/Gebäude",
+        sk: "record3",
+        energietraeger: "Solar/Gebäude",
+        bezeichnung: "BgK100------09",
+        inbetriebnahme: "ab 01.01.2020",
+        commissioning_date_from: "2020-01-01",
+        power_output_from: 0,
+        einspeiseverguetung: 9,
+        anzulegender_wert: 9,
+        ausfallverguetung: 0,
+        mieterstromzuschlag: 0,
+      },
+    ];
+
+    it("should filter by bezeichnung case-insensitively", async () => {
+      mockSend.mockResolvedValue({ Items: mockRecords });
+
+      const result = await lookupTariffs({
+        energyType: "Solar/Gebäude",
+        bezeichnung: "sgk330",
+      });
+
+      expect(result.found).toBe(true);
+      expect(result.records).toHaveLength(1);
+      expect(result.records[0].sk).toBe("record1");
+    });
+
+    it("should handle partial matches for bezeichnung", async () => {
+      mockSend.mockResolvedValue({ Items: mockRecords });
+
+      const result = await lookupTariffs({
+        energyType: "Solar/Gebäude",
+        bezeichnung: "SgK33",
+      });
+
+      expect(result.found).toBe(true);
+      expect(result.records).toHaveLength(2);
+      expect(result.records.map((r) => r.sk)).toContain("record1");
+      expect(result.records.map((r) => r.sk)).toContain("record2");
+    });
+
+    it("should return no results when bezeichnung does not match", async () => {
+      mockSend.mockResolvedValue({ Items: mockRecords });
+
+      const result = await lookupTariffs({
+        energyType: "Solar/Gebäude",
+        bezeichnung: "NonExistent",
+      });
+
+      expect(result.found).toBe(false);
+      expect(result.records).toHaveLength(0);
     });
   });
 
