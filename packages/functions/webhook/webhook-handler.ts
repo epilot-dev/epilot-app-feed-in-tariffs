@@ -31,7 +31,7 @@ export const handler: APIGatewayProxyHandlerV2 = async (event) => {
 
     // Extract tariff lookup parameters from entity
     const entity = payload.data.entity;
-    const energyType = entity.energietraeger;
+    const energyType = entity.energietraeger || "Solar/Gebäude";
     const commissioningDate = entity.inbetriebnahme;
     const powerOutput = entity.leistung_kw;
     const bezeichnung = entity.bezeichnung;
@@ -46,7 +46,11 @@ export const handler: APIGatewayProxyHandlerV2 = async (event) => {
     });
 
     if (tariffResult.error) {
-      console.error("Tariff lookup error:", tariffResult.error);
+      return {
+        statusCode: 400,
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ success: false, error: tariffResult.error }),
+      };
     }
 
     const tariffs: EegTariffRecord[] = tariffResult.records || [];

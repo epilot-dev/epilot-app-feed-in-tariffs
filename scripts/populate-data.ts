@@ -306,14 +306,14 @@ function isDateInRange(isoDate: string, range: DateRange): boolean {
   return true;
 }
 
-async function populateData() {
+async function populateData(excelFilePath?: string) {
   // Import SST resource to get table name
   const { Resource } = await import("sst");
   const tableName = Resource.EegTariffTable.name;
 
   // Read Excel file
   // Source: https://www.netztransparenz.de/de-de/Erneuerbare-Energien-und-Umlagen/Abwicklungshinweise-und-Umsetzungshilfen/EEG
-  const excelPath = path.join(__dirname, "../excel-data/eeg-verguetungskategorien_eeg_2026_20251212.xlsx");
+  const excelPath = excelFilePath ?? path.join(__dirname, "../excel-data/eeg-verguetungskategorien_eeg_2026_20251212.xlsx");
   const workbook = XLSX.readFile(excelPath);
   const worksheet = workbook.Sheets["EEG-Vergütungen und vNNE"];
 
