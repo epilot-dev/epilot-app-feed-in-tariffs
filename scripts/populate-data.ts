@@ -17,6 +17,90 @@ interface PowerRange {
   to?: number; // Power in kW, undefined means no upper limit
 }
 
+// Map of German month abbreviations used in bezeichnung suffixes to month numbers (1-12).
+const BEZEICHNUNG_MONTH_MAP: Record<string, number> = {
+  Jan: 1,
+  Feb: 2,
+  Mrz: 3,
+  Apr: 4,
+  Mai: 5,
+  Jun: 6,
+  Jul: 7,
+  Aug: 8,
+  Sep: 9,
+  Okt: 10,
+  Nov: 11,
+  Dez: 12,
+};
+
+// The half-year cadence ("Feb" -> Feb-Jul, "Aug" -> Aug-Dec) was introduced by EEG 2023
+// for commissions from 2024 onwards. Before that, "FebYY" and "AugYY" suffixes referred
+// to single months.
+const HALF_YEAR_CADENCE_YEAR = 2024;
+
+// Extract the half-year month and 4-digit year encoded in a bezeichnung suffix.
+// Matches the trailing 3-letter German month abbreviation + 2-digit year, e.g.
+// "SgK4820--Feb26" -> { month: 2, year: 2026 }, "SgK482a0-Aug26" -> { month: 8, year: 2026 }.
+// Returns null for suffixes without an encoded month (e.g. "SgK4820-----23").
+function extractMonthFromBezeichnung(bezeichnung: string): { month: number; year: number } | null {
+  const match = bezeichnung.match(/(Jan|Feb|Mrz|Apr|Mai|Jun|Jul|Aug|Sep|Okt|Nov|Dez)(\d{2})$/);
+  if (!match) return null;
+  return {
+    month: BEZEICHNUNG_MONTH_MAP[match[1]],
+    year: 2000 + parseInt(match[2], 10),
+  };
+}
+
+// Reconcile a parsed Inbetriebnahme date range against the half-year encoded in the
+// bezeichnung suffix. The bezeichnung is the row's identity (it is the DynamoDB sort
+// key) and is therefore the more trustworthy signal; if the Inbetriebnahme cell in the
+// upstream spreadsheet contradicts it, the parsed range is overridden to match the
+// suffix and a warning is logged.
+//
+// This guards against typos in netztransparenz.de's spreadsheet — e.g. the bug
+// observed in `eeg-verguetungskategorien_eeg_2026_20260316.xlsx` where rows
+// SgK4820/SgK4821/SgK4822 --Aug26 carry the H1 text "Inbetriebnahme 02-07/2026"
+// instead of "Inbetriebnahme 08-12/2026". Without this guard, every H1/2026
+// commissioning produces duplicate (Feb26 + Aug26) tariff entries.
+function reconcileDateRangeWithBezeichnung(
+  bezeichnung: string,
+  parsedRange: DateRange | null,
+): DateRange | null {
+  const suffix = extractMonthFromBezeichnung(bezeichnung);
+  if (!suffix || !parsedRange) return parsedRange;
+
+  const parsedFromMonth = parseInt(parsedRange.from.slice(5, 7), 10);
+  if (parsedFromMonth === suffix.month) return parsedRange;
+
+  // Mismatch: build the corrected range from the suffix.
+  const isPostEeg2023HalfYear =
+    suffix.year >= HALF_YEAR_CADENCE_YEAR && (suffix.month === 2 || suffix.month === 8);
+
+  let correctedFrom: string;
+  let correctedTo: string;
+  if (isPostEeg2023HalfYear) {
+    if (suffix.month === 2) {
+      correctedFrom = `${suffix.year}-02-01`;
+      correctedTo = `${suffix.year}-07-31`;
+    } else {
+      correctedFrom = `${suffix.year}-08-01`;
+      correctedTo = `${suffix.year}-12-31`;
+    }
+  } else {
+    const mm = suffix.month.toString().padStart(2, "0");
+    const lastDay = new Date(suffix.year, suffix.month, 0).getDate();
+    correctedFrom = `${suffix.year}-${mm}-01`;
+    correctedTo = `${suffix.year}-${mm}-${lastDay.toString().padStart(2, "0")}`;
+  }
+
+  console.warn(
+    `Bezeichnung "${bezeichnung}" suffix encodes month ${suffix.month} but Inbetriebnahme cell parsed to ${parsedRange.from}..${parsedRange.to}. ` +
+      `Overriding date range to ${correctedFrom}..${correctedTo} based on bezeichnung suffix.`,
+  );
+
+  return { from: correctedFrom, to: correctedTo };
+}
+
 // Parse German commissioning date strings into date ranges
 function parseCommissioningDate(dateStr: string): DateRange | null {
   if (!dateStr) return null;
@@ -348,8 +432,11 @@ async function populateData(excelFilePath?: string) {
       continue;
     }
 
-    // Parse commissioning date range
-    const dateRange = parseCommissioningDate(inbetriebnahme);
+    // Parse commissioning date range, then reconcile against the bezeichnung suffix.
+    // The bezeichnung is the DynamoDB sort key and is treated as authoritative when it
+    // disagrees with the Inbetriebnahme cell (see reconcileDateRangeWithBezeichnung).
+    const parsedDateRange = parseCommissioningDate(inbetriebnahme);
+    const dateRange = reconcileDateRangeWithBezeichnung(bezeichnung, parsedDateRange);
 
     // Parse power range from additional criteria
     const powerRange = parsePowerRange(weitereKriterien);
@@ -408,4 +495,12 @@ if (require.main === module) {
   populateData().catch(console.error);
 }
 
-export { populateData, parseCommissioningDate, isDateInRange, parsePowerRange, isPowerInRange };
+export {
+  populateData,
+  parseCommissioningDate,
+  isDateInRange,
+  parsePowerRange,
+  isPowerInRange,
+  extractMonthFromBezeichnung,
+  reconcileDateRangeWithBezeichnung,
+};
