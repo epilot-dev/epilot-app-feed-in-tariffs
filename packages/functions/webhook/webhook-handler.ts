@@ -68,6 +68,7 @@ export const handler: APIGatewayProxyHandlerV2 = async (event) => {
       ausfall_verguetung_in_ctkwh: null,
       anzulegender_wert_in_ctkwh: null,
       einspeise_verguetung_in_ctkwh: null,
+      eeg_feed_in_tariffs: [],
     };
 
     // Add tariff data if found
