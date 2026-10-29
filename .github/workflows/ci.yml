@@ -1,0 +1,79 @@
+name: CI
+
+# Tests on every PR. On main: tests, then `sst deploy --stage prod` of the
+# backend (tariff API + flow action webhook). The frontend capability bundle is
+# shipped separately as an app version (frontend/app.zip) and is not touched here.
+#
+# AWS auth is GitHub OIDC (no long-lived keys). The deploy role ARN is the
+# AWS_DEPLOY_ROLE_ARN variable on the `prod` GitHub Environment; add required
+# reviewers there to gate prod deploys.
+on:
+  pull_request:
+  push:
+    branches:
+      - main
+  workflow_dispatch:
+    inputs:
+      action:
+        description: deploy or diff
+        required: true
+        default: deploy
+        type: choice
+        options: [deploy, diff]
+
+permissions:
+  id-token: write
+  contents: read
+
+jobs:
+  test:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v7
+
+      - uses: actions/setup-node@v7
+        with:
+          node-version: 22
+          cache: npm
+
+      - name: Install deps
+        run: npm ci
+
+      - name: Unit tests
+        run: npx vitest run
+
+  deploy:
+    needs: test
+    if: github.ref == 'refs/heads/main' && github.event_name != 'pull_request'
+    runs-on: ubuntu-latest
+    environment: prod
+    concurrency:
+      group: deploy-prod
+      cancel-in-progress: false
+    env:
+      # Must match the region the existing prod stack lives in, or SST creates a new one
+      AWS_REGION: ${{ vars.AWS_REGION || 'eu-central-1' }}
+    steps:
+      - uses: actions/checkout@v7
+
+      - uses: actions/setup-node@v7
+        with:
+          node-version: 22
+          cache: npm
+
+      - name: Configure AWS credentials (OIDC)
+        uses: aws-actions/configure-aws-credentials@v6
+        with:
+          role-to-assume: ${{ vars.AWS_DEPLOY_ROLE_ARN }}
+          aws-region: ${{ env.AWS_REGION }}
+
+      - name: Install deps
+        run: npm ci
+
+      - name: SST ${{ inputs.action || 'deploy' }}
+        run: |
+          if [ "${{ inputs.action }}" = "diff" ]; then
+            npx sst diff --stage prod
+          else
+            npx sst deploy --stage prod
+          fi
