@@ -5,8 +5,8 @@ name: CI
 # shipped separately as an app version (frontend/app.zip) and is not touched here.
 #
 # AWS auth is GitHub OIDC (no long-lived keys). The deploy role ARN is the
-# AWS_DEPLOY_ROLE_ARN variable on the `prod` GitHub Environment; add required
-# reviewers there to gate prod deploys.
+# AWS_DEPLOY_ROLE_ARN variable on the `prod` GitHub Environment. That environment
+# must only allow the `main` branch: the role trusts the environment, not the branch.
 on:
   pull_request:
   push:
@@ -22,16 +22,15 @@ on:
         options: [deploy, diff]
 
 permissions:
-  id-token: write
   contents: read
 
 jobs:
   test:
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v7
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7
 
-      - uses: actions/setup-node@v7
+      - uses: actions/setup-node@949feb2413d6458794dcd2491c4babbbce0c15c1 # v7
         with:
           node-version: 22
           cache: npm
@@ -47,32 +46,35 @@ jobs:
     if: github.ref == 'refs/heads/main' && github.event_name != 'pull_request'
     runs-on: ubuntu-latest
     environment: prod
+    permissions:
+      id-token: write
+      contents: read
     concurrency:
       group: deploy-prod
       cancel-in-progress: false
     env:
-      # Must match the region the existing prod stack lives in, or SST creates a new one
-      AWS_REGION: ${{ vars.AWS_REGION || 'eu-central-1' }}
+      AWS_REGION: eu-central-1
+      ACTION: ${{ inputs.action || 'deploy' }}
     steps:
-      - uses: actions/checkout@v7
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7
 
-      - uses: actions/setup-node@v7
+      - uses: actions/setup-node@949feb2413d6458794dcd2491c4babbbce0c15c1 # v7
         with:
           node-version: 22
-          cache: npm
+
+      # Before AWS credentials exist, so dependency install scripts can't read them
+      - name: Install deps
+        run: npm ci
 
       - name: Configure AWS credentials (OIDC)
-        uses: aws-actions/configure-aws-credentials@v6
+        uses: aws-actions/configure-aws-credentials@e1253824e5c10ff9df46874f81ed3ec929e19cfd # v6
         with:
           role-to-assume: ${{ vars.AWS_DEPLOY_ROLE_ARN }}
           aws-region: ${{ env.AWS_REGION }}
 
-      - name: Install deps
-        run: npm ci
-
-      - name: SST ${{ inputs.action || 'deploy' }}
+      - name: SST ${{ env.ACTION }}
         run: |
-          if [ "${{ inputs.action }}" = "diff" ]; then
+          if [ "$ACTION" = "diff" ]; then
             npx sst diff --stage prod
           else
             npx sst deploy --stage prod
