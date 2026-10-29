@@ -471,28 +471,40 @@ async function populateData(excelFilePath?: string) {
   const batchSize = 25;
   for (let i = 0; i < records.length; i += batchSize) {
     const batch = records.slice(i, i + batchSize);
-
-    const command = new BatchWriteCommand({
-      RequestItems: {
-        [tableName]: batch.map((record) => ({
-          PutRequest: { Item: record },
-        })),
-      },
+    await writeBatch({
+      tableName,
+      requests: batch.map((record) => ({ PutRequest: { Item: record } })),
     });
-
-    try {
-      await docClient.send(command);
-      console.log(`Wrote batch ${Math.floor(i / batchSize) + 1}/${Math.ceil(records.length / batchSize)}`);
-    } catch (error) {
-      console.error(`Error writing batch starting at ${i}:`, error);
-    }
+    console.log(`Wrote batch ${Math.floor(i / batchSize) + 1}/${Math.ceil(records.length / batchSize)}`);
   }
 
-  console.log("Data population completed");
+  console.log(`Data population completed: ${records.length} records written`);
 }
 
+const MAX_BATCH_ATTEMPTS = 8;
+
+// BatchWriteItem can partially succeed; retry UnprocessedItems and fail loudly instead of skipping them
+const writeBatch = async (params: { tableName: string; requests: Record<string, unknown>[] }) => {
+  let pending = params.requests;
+
+  for (let attempt = 1; pending.length > 0; attempt++) {
+    if (attempt > MAX_BATCH_ATTEMPTS) {
+      throw new Error(`${pending.length} items still unprocessed after ${MAX_BATCH_ATTEMPTS} attempts`);
+    }
+    if (attempt > 1) {
+      await new Promise((resolve) => setTimeout(resolve, 100 * 2 ** attempt));
+    }
+
+    const result = await docClient.send(new BatchWriteCommand({ RequestItems: { [params.tableName]: pending } }));
+    pending = (result.UnprocessedItems?.[params.tableName] ?? []) as Record<string, unknown>[];
+  }
+};
+
 if (require.main === module) {
-  populateData().catch(console.error);
+  populateData().catch((error) => {
+    console.error(error);
+    process.exit(1);
+  });
 }
 
 export {

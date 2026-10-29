@@ -85,6 +85,7 @@ const main = async () => {
 
   console.log(`Latest file: ${latest.filename}`);
 
+  fs.mkdirSync(DATA_DIR, { recursive: true });
   const destPath = path.join(DATA_DIR, latest.filename);
 
   // Check if we already have this file
