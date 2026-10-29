@@ -5,7 +5,7 @@ export default defineConfig({
     globals: true,
     environment: "node",
     // Exclude integration tests unless INTEGRATION_TESTS is set
-    exclude: process.env.INTEGRATION_TESTS ? ["**/node_modules/**"] : ["**/node_modules/**", "**/*.integration.test.*"],
+    exclude: process.env.INTEGRATION_TESTS ? ["**/node_modules/**", "**/*.d.ts"] : ["**/node_modules/**", "**/*.d.ts", "**/*.integration.test.*"],
     include: process.env.INTEGRATION_TESTS ? ["**/*.integration.test.*"] : ["**/*.test.*"],
   },
 });
